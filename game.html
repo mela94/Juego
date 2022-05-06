@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+
+        img {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <img id="img-1" src="1.png">
+    <img id="img-2" src="2.png">
+    <img id="img-3" src="3.png">
+
+    <canvas width="300" height="200"></canvas>
+    <script>
+        const state = {
+            frame: 0,
+            jump: false,
+            subir: true,
+            x: 10,
+            y: 100,
+            time: 4,
+            fin: false,
+            puntos: 0,
+        };
+
+        const enemigo = {
+            visible: false,
+            valor: 10,
+            x: 310,
+            y: 170,
+        };
+
+        function init () {
+            state.frame = 0,
+            state.jump = false,
+            state.subir = true,
+            state.x = 10,
+            state.y = 100,
+            state.time = 4,
+            state.fin = false,
+            state.puntos = 0,
+
+            enemigo.visible = false;
+            enemigo.x = 310;
+            enemigo.y = 170;
+            enemigo.valor = 10;
+        }
+
+        const imgUno = document.querySelector('#img-1');
+        const imgDos = document.querySelector('#img-2');
+        const imgTres = document.querySelector('#img-3');
+
+        const canvas = document.querySelector('canvas');
+        const ctx = canvas.getContext('2d');
+
+        imgUno.addEventListener('load', e => {
+            time();
+        });
+ 
+        function drawImagen() {
+            let source;
+            if (!state.jump) {
+                source = state.frame === 0 ? imgUno : imgDos;
+            } else {
+                source = imgTres;
+                if (state.subir) {
+                    state.y -= 1
+                } else {
+                    state.y += 1
+                }
+                if (state.y < 70) state.subir = false;
+                if (state.y === 100) {
+                    state.jump = false;
+                    state.subir = true;
+                }
+            }
+            
+            ctx.drawImage(source, 0, 0, 100, 200, state.x, state.y, 50, 100);
+        }
+
+        function getVelocidad() {
+            const rand = Math.random();
+            if (rand < 0.25) return 1;
+            if (rand < 0.75) return 3;
+            return 5;
+        }
+
+        function getPosicionInicial() {
+            const rand = Math.random();
+            if (rand < 0.25) return 310;
+            if (rand < 0.5) return 250;
+            if (rand < 0.75) return 200;
+            return 150;
+        }
+
+        function getColor() {
+            const rand = Math.random();
+            if (rand < 0.25) return 'red';
+            if (rand < 0.5) return 'blue';
+            if (rand < 0.75) return 'green';
+            return 'black';
+        }
+
+        function drawTime() {
+            ctx.fillStyle = 'black';
+            ctx.font = 'bold 24px sans-serif';
+            ctx.fillText(state.time, 140, 100);
+        }
+
+        function mostrarFin() {
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 32px sans-serif';
+            ctx.fillStyle = 'red';
+            ctx.fillText('¡PERDISTE!', 150, 80);
+            ctx.font = '16px sans-serif';
+            ctx.fillText('(espacio para reiniciar)', 150, 110)
+        }
+
+        function checkColision() {
+            if (!state.jump && enemigo.x >= 5 && enemigo.x <= 43) {
+                return state.fin = true;
+            }
+
+            if (enemigo.x >= 27 && enemigo.x <= 43 && state.y > 78) {
+                console.log('ENEMIGO: ', enemigo.x);
+                console.log('PERSONAJE: ', state.y);
+                return state.fin = true;
+            }
+        }
+
+        function generarEnemigo() {
+            if (!enemigo.visible) {
+                const rand = Math.random()
+                if (rand > 0.5) {
+                    ctx.fillStyle = getColor();
+                    enemigo.visible = true;
+                }
+            } else {
+                enemigo.x -= getVelocidad();
+                if (enemigo.x < 0) {
+                    enemigo.visible = false;
+                    enemigo.x = getPosicionInicial();
+                    state.puntos += enemigo.valor;
+                }
+            }
+
+            if (enemigo.visible) {
+                ctx.beginPath();
+                ctx.arc(enemigo.x, enemigo.y, 5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        }
+
+        function mostrarPuntos() {
+            ctx.textAlign = 'end';
+            ctx.font = 'bold 18px sans-serif';
+            ctx.fillStyle = 'green';
+            ctx.fillText(state.puntos, 290, 20);
+        }
+
+        function time() {
+            const interval = setInterval(() => {
+                state.time -= 1;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawTime();
+                drawImagen();
+                if (state.time === 0) {
+                    clearInterval(interval);
+                    state.frame = 1;
+                    game();
+                }
+            }, 1000);
+        }
+
+        window.addEventListener('keydown', e => {
+            if (state.fin && e.key === ' ') {
+                init();
+                return time();
+            }
+            if (e.key === ' ' && !state.jump && state.time === 0) {
+                state.jump = true;
+            }
+        })
+
+        function game() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawImagen();
+            generarEnemigo();
+            checkColision();
+            mostrarPuntos();
+            if (!state.fin) {
+                requestAnimationFrame(game);
+            } else {
+                mostrarFin();
+            }
+        }
+    </script>
+</body>
+</html>
